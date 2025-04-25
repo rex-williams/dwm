@@ -10,7 +10,7 @@ static const unsigned int borderpx  = 2;        /* border pixel of windows */
 static const unsigned int snap      = 32;       /* snap pixel */
 static const int showbar            = 1;        /* 0 means no bar */
 static const int topbar             = 1;        /* 0 means bottom bar */
-static const char *fonts[]          = { "terminus:style=bold:pixelsize=16" };
+static const char *fonts[]          = { "Monospace:size=11", "NotoColorEmoji:size=11:antialias=true:autohint=true"  };
 static char normbgcolor[]           = "#000000";
 static char normbordercolor[]       = "#000000";
 static char normfgcolor[]           = "#ffffff";
@@ -105,8 +105,11 @@ static const Key keys[] = {
 
     /* PROGRAMS */
         { MODKEY,                       XK_Return,       spawn,          {.v = (const char*[]){ TERMINAL, NULL } } },
+        { MODKEY|ShiftMask,             XK_r,            spawn,          {.v = (const char*[]){ TERMINAL, "-e", "htop", NULL } } },
         { MODKEY,                       XK_d,            spawn,          {.v = (const char*[]){ "dmenu_run", NULL } } },
+        { MODKEY|ShiftMask,             XK_d,            spawn,          {.v = (const char*[]){ "passmenu", NULL } } },
         { MODKEY,                       XK_w,            spawn,          {.v = (const char*[]){ BROWSER, NULL } } },
+        { Mod1Mask|ShiftMask,           XK_r,            spawn,          {.v = (const char*[]){ "record", NULL } } },
         /* MUSIC */
             { MODKEY,                       XK_p,            spawn,          {.v = (const char*[]){ "mpc", "toggle", NULL } } },
             { MODKEY,                       XK_comma,        spawn,          {.v = (const char*[]){ "mpc", "prev", NULL } } },
