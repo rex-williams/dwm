@@ -1,0 +1,11 @@
+#!/bin/sh
+set -x
+while : ; do
+    mpc idle >/dev/null && kill -35 $(cat $HOME/.cache/pidofbar) || break
+done &
+while : ; do
+    mpc current --wait &&
+    pidof ncmpcpp >/dev/null ||
+    songinfo
+done &
+wait

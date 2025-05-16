@@ -1,0 +1,99 @@
+#!/bin/env sh
+set -x
+xsetroot -name ""
+# INIT
+echo "$$" > "$HOME"/.cache/pidofbar
+sec=0
+    
+# MODULES
+update_cpuuse () { 
+    cpuuse="$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1"%"}')"
+}
+
+update_cputemp () { 
+    cputemp="$(sensors | awk '/Tctl/ {print $2}')"
+}
+
+update_mem() { 
+    mem="$(free --mebi | sed -n '2{p;q}' | awk '{printf ("%2.2fGiB/%2.2fGiB\n", ( $3 / 1024), ($2 / 1024))}')"
+}
+
+update_time () { 
+	time="$(date "+%I:%M%p")" 
+}
+
+update_song() {
+    song="$(mpc status | sed "/^volume:/d;s/\\[paused\\].*/#/g;/\\[playing\\].*/d;/^ERROR/Q" | paste -sd ' ' -)"
+}
+
+update_wifi() {
+    update() {
+        sum=0
+        for arg; do
+            read -r i < "$arg"
+            sum=$(( sum + i ))
+        done
+        cache=/tmp/${1##*/}
+        [ -f "$cache" ] && read -r old < "$cache" || old=0
+        printf %d\\n "$sum" > "$cache"
+        printf %d\\n $(( sum - old ))
+    }
+
+    rx=$(update /sys/class/net/[ew]*/statistics/rx_bytes)
+    tx=$(update /sys/class/net/[ew]*/statistics/tx_bytes)
+
+    wifi="$(printf "DN: %4sB UP: %4sB\\n" $(numfmt --to=iec $rx $tx))"
+}
+
+update_record() {
+    record="$(cat /tmp/recordingicon)"
+}
+
+update_weather() {
+    weather="$(curl 'wttr.in/Oklahoma?format=1')"
+}
+
+# For calcurse users, refer https://github.com/pystardust/automeet
+#update_event () { 
+#	event="$(calcurse -n | sed 1d | \
+#		sed -E "s_^ *\[(.*):(.*)\] ([^\t]*)\t?.*_[\1h \2m->\3]_")" 
+#	[ "[]" = "$event" ] && event=""
+#}
+update_song
+update_record
+
+# modules that don't update on their own need to be run at the start for getting their initial value
+#update_vol
+#update_backlight
+
+display () { 
+	xsetroot -name " SONG: $song | WEATHER: $weather | RECORD: $record | MEM: $mem | CPUTEMP: $cputemp | CPUUSE: $cpuuse | $wifi | TIME: $time"
+	#echo " SONG: $song | WEATHER: $weather | RECORD: $record | MEM: $mem | CPUUSE: $cpuuse | WIFI: $wifi | TIME: $time"
+}
+
+# SIGNALLING
+# trap	"<function>;display"		"RTMIN+n"
+trap "update_song;display" "RTMIN+1"
+trap "update_record;display" "RTMIN+2"
+# to update it from external commands
+## kill -m "$(cat ~/.cache/pidofbar)"
+# where m = 34 + n
+
+while true
+do
+	sleep 1 & wait && { 
+		# to update item ever n seconds with a offset of m
+		## [ $((sec % n)) -eq m ] && update_item
+		[ $((sec % 1  )) -eq 0 ] && update_cputemp
+		[ $((sec % 1  )) -eq 0 ] && update_cpuuse
+		[ $((sec % 1  )) -eq 0 ] && update_mem
+		[ $((sec % 1  )) -eq 0 ] && update_song
+		[ $((sec % 1  )) -eq 0 ] && update_wifi
+		[ $((sec % 60 )) -eq 0 ] && update_time
+		[ $((sec % 86400 )) -eq 0 ] && update_weather
+		[ $((sec % 1  )) -eq 0 ] && display
+		sec=$((sec + 1))
+	}
+done 
+
+
